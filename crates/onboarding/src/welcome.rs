@@ -2,6 +2,7 @@ use gpui::{
     Action, App, Context, Entity, EventEmitter, FocusHandle, Focusable, InteractiveElement,
     NoAction, ParentElement, Render, Styled, Window, actions,
 };
+use menu::{SelectNext, SelectPrevious};
 use ui::{ButtonLike, Divider, DividerColor, KeyBinding, Vector, VectorName, prelude::*};
 use workspace::{
     NewFile, Open, Workspace, WorkspaceId,
@@ -122,6 +123,7 @@ impl SectionEntry {
         cx: &App,
     ) -> impl IntoElement {
         ButtonLike::new(("onboarding-button-id", button_index))
+            .tab_index(button_index as isize)
             .full_width()
             .child(
                 h_flex()
@@ -148,10 +150,23 @@ pub struct WelcomePage {
     focus_handle: FocusHandle,
 }
 
+impl WelcomePage {
+    fn select_next(&mut self, _: &SelectNext, window: &mut Window, cx: &mut Context<Self>) {
+        window.focus_next();
+        cx.notify();
+    }
+
+    fn select_previous(&mut self, _: &SelectPrevious, window: &mut Window, cx: &mut Context<Self>) {
+        window.focus_prev();
+        cx.notify();
+    }
+}
+
 impl Render for WelcomePage {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let (first_section, second_entries) = CONTENT;
+        let (first_section, second_section) = CONTENT;
         let first_section_entries = first_section.entries.len();
+        let last_index = first_section_entries + second_section.entries.len();
 
         h_flex()
             .size_full()
@@ -160,6 +175,8 @@ impl Render for WelcomePage {
             .bg(cx.theme().colors().editor_background)
             .key_context("Welcome")
             .track_focus(&self.focus_handle(cx))
+            .on_action(cx.listener(Self::select_previous))
+            .on_action(cx.listener(Self::select_next))
             .child(
                 h_flex()
                     .px_12()
@@ -197,7 +214,7 @@ impl Render for WelcomePage {
                                         window,
                                         cx,
                                     ))
-                                    .child(second_entries.render(
+                                    .child(second_section.render(
                                         first_section_entries,
                                         &self.focus_handle,
                                         window,
@@ -216,6 +233,7 @@ impl Render for WelcomePage {
                                             .child(
                                                 div().child(
                                                     Button::new("welcome-exit", "Return to Setup")
+                                                        .tab_index(last_index as isize)
                                                         .full_width()
                                                         .label_size(LabelSize::XSmall),
                                                 ),

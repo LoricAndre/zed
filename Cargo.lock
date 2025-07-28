@@ -10944,6 +10944,7 @@ dependencies = [
  "feature_flags",
  "fs",
  "gpui",
+ "menu",
  "settings",
  "theme",
  "ui",
